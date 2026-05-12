@@ -1,8 +1,15 @@
 # agent-browser
 
-## 0.27.0
+## 0.27.2
 
 <!-- release:start -->
+### Bug Fixes
+
+- Fixed Kernel profile creation by sending `KERNEL_PROFILE_NAME` as Kernel's `profile` object with `save_changes` enabled, instead of sending a bare string.
+<!-- release:end -->
+
+## 0.27.0
+
 ### New Features
 
 - **React introspection** - First-class React DevTools integration with new `react tree`, `react inspect <fiberId>`, `react renders start|stop`, and `react suspense` commands for full component-tree visibility, per-fiber props/hooks/state inspection, render profiling with mount/re-render counts and change details, and Suspense boundary classification with root-cause grouping and recommendations. React DevTools hook is vendored (MIT) and embedded in the binary with zero runtime dependencies (#1257)
@@ -27,7 +34,6 @@
 - @quuu
 - @shaper
 - @ThomasK33
-<!-- release:end -->
 
 ## 0.26.0
 

@@ -291,19 +291,8 @@ async fn connect_kernel() -> Result<(String, Option<ProviderSession>), String> {
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(300);
 
-    let mut body = json!({
-        "headless": headless,
-        "stealth": stealth,
-        "timeout_seconds": timeout_seconds,
-    });
-
-    if let Ok(profile) = env::var("KERNEL_PROFILE_NAME") {
-        if !profile.is_empty() {
-            body.as_object_mut()
-                .unwrap()
-                .insert("profile".to_string(), json!(profile));
-        }
-    }
+    let profile = env::var("KERNEL_PROFILE_NAME").ok();
+    let body = build_kernel_request_body(headless, stealth, timeout_seconds, profile.as_deref());
 
     let client = reqwest::Client::new();
     let mut request = client.post(&url).header("Content-Type", "application/json");
@@ -360,6 +349,33 @@ async fn connect_kernel() -> Result<(String, Option<ProviderSession>), String> {
             session_id,
         }),
     ))
+}
+
+fn build_kernel_request_body(
+    headless: bool,
+    stealth: bool,
+    timeout_seconds: u64,
+    profile_name: Option<&str>,
+) -> Value {
+    let mut body = json!({
+        "headless": headless,
+        "stealth": stealth,
+        "timeout_seconds": timeout_seconds,
+    });
+
+    if let Some(profile_name) = profile_name {
+        if !profile_name.is_empty() {
+            body.as_object_mut().unwrap().insert(
+                "profile".to_string(),
+                json!({
+                    "name": profile_name,
+                    "save_changes": true,
+                }),
+            );
+        }
+    }
+
+    body
 }
 
 // ============================================================================
@@ -812,5 +828,37 @@ mod tests {
         // Should be None after take
         let taken_again = take_agentcore_ws_headers();
         assert!(taken_again.is_none());
+    }
+
+    #[test]
+    fn test_kernel_profile_name_builds_profile_object() {
+        let body = build_kernel_request_body(true, false, 300, Some("agent-slug"));
+
+        assert_eq!(
+            body,
+            json!({
+                "headless": true,
+                "stealth": false,
+                "timeout_seconds": 300,
+                "profile": {
+                    "name": "agent-slug",
+                    "save_changes": true,
+                },
+            })
+        );
+    }
+
+    #[test]
+    fn test_kernel_profile_name_omitted_when_empty() {
+        let body = build_kernel_request_body(true, false, 300, Some(""));
+
+        assert_eq!(
+            body,
+            json!({
+                "headless": true,
+                "stealth": false,
+                "timeout_seconds": 300,
+            })
+        );
     }
 }
